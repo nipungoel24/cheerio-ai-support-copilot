@@ -1,6 +1,6 @@
 # Cheerio AI – Product Intern Assignment A: Cheerio Co-Pilot
 
-**Live prototype:** https://prototype-lilac-ten.vercel.app · **Repo:** https://github.com/nipungoel24/cheerio-ai-support-copilot · **Doc (PDF):** [docs/Cheerio_Assignment_A_Document.pdf](docs/Cheerio_Assignment_A_Document.pdf)
+**Live prototype:** https://prototype-lilac-ten.vercel.app · **Google Sheet:** https://docs.google.com/spreadsheets/d/1ygh9ABgRHeCHKGz5Qe62OcML2P5Nz-_vOVG9SVSdc9w/edit?usp=sharing · **Repo:** https://github.com/nipungoel24/cheerio-ai-support-copilot · **Doc (PDF):** [docs/Cheerio_Assignment_A_Document.pdf](docs/Cheerio_Assignment_A_Document.pdf)
 
 | Folder | What | Submit as |
 |---|---|---|
@@ -26,7 +26,7 @@ cd docs && pip install markdown && python build_html.py   # then Print → Save 
 
 - [x] Prototype deployed: https://prototype-lilac-ten.vercel.app
 - [x] 4-page doc: `docs/Cheerio_Assignment_A_Document.pdf`, screenshots in `docs/screenshots/` (2160×1350)
-- [ ] Google Sheet: upload the `.xlsx` to Drive → Open with Google Sheets → share "Anyone with the link can view"
-- [ ] AI chat links / prompt screenshots (mandatory) in the submission form
+- [x] Google Sheet (formulas visible): https://docs.google.com/spreadsheets/d/1ygh9ABgRHeCHKGz5Qe62OcML2P5Nz-_vOVG9SVSdc9w/edit?usp=sharing
+- [x] Prompt log: `docs/PROMPT_LOG.md` (upload to the form's prompt-log field)
 
 If you change a blue assumption cell in the sheet, update `prototype/src/data/numbers.ts` and Part 4 of the doc to match.

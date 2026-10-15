@@ -1,7 +1,7 @@
 # Cheerio Co-Pilot: support that fixes the problem, not just explains it
 
-**Assignment A · Make customer support scale for non-technical users** · Nipun Goel · Oct 2026
-**Prototype:** [prototype-lilac-ten.vercel.app](https://prototype-lilac-ten.vercel.app) · **Repo:** [github.com/nipungoel24/cheerio-ai-support-copilot](https://github.com/nipungoel24/cheerio-ai-support-copilot) · **Google Sheet** (formulas visible) and **prompt log**: shared in the submission form
+**Assignment A — Make customer support scale for non-technical users** · Nipun Goel · Oct 2026
+**Live Design Prototype:** [prototype-lilac-ten.vercel.app](https://prototype-lilac-ten.vercel.app) · **Cost, Billing & Audit Google Sheet:** [open sheet](https://docs.google.com/spreadsheets/d/1ygh9ABgRHeCHKGz5Qe62OcML2P5Nz-_vOVG9SVSdc9w/edit?usp=sharing) · **GitHub Repository:** [nipungoel24/cheerio-ai-support-copilot](https://github.com/nipungoel24/cheerio-ai-support-copilot)
 
 ---
 
