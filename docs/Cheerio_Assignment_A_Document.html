@@ -32,7 +32,7 @@ a { color: var(--brand); }
 </style></head><body>
 <h1>Cheerio Co-Pilot: support that fixes the problem, not just explains it</h1>
 <p><strong>Assignment A · Make customer support scale for non-technical users</strong> · Nipun Goel · Oct 2026
-<strong>Prototype:</strong> [add link] · <strong>Google Sheet (formulas visible):</strong> [add link] · <strong>Prompt log:</strong> [add link] · <strong>Loom:</strong> [optional]</p>
+<strong>Prototype:</strong> <a href="https://prototype-lilac-ten.vercel.app">prototype-lilac-ten.vercel.app</a> · <strong>Repo:</strong> <a href="https://github.com/nipungoel24/cheerio-ai-support-copilot">github.com/nipungoel24/cheerio-ai-support-copilot</a> · <strong>Google Sheet</strong> (formulas visible) and <strong>prompt log</strong>: shared in the submission form</p>
 <hr />
 <h2>Part 1: Solution</h2>
 <h3>1. Who is the user, and which 5 queries come first?</h3>
@@ -249,7 +249,7 @@ a { color: var(--brand); }
 <p>How I'll get there: ship by volume bucket, instrument every session (diagnosis shown → fix applied → task completed → ticket in 48 h?), and every week turn the top 3 escalation reasons into new deterministic fixes.</p>
 <hr />
 <h2>Part 2: Prototype</h2>
-<p><strong>Link:</strong> [add deployed link] · Built with React + Tailwind. A <strong>Reviewer mode</strong> bar at the top switches between scenarios.</p>
+<p><strong>Link:</strong> <a href="https://prototype-lilac-ten.vercel.app">prototype-lilac-ten.vercel.app</a> · Built with React + Tailwind. A <strong>Reviewer mode</strong> bar at the top switches between scenarios.</p>
 <table>
 <thead>
 <tr>
@@ -284,49 +284,44 @@ a { color: var(--brand); }
 </div>
 <hr />
 <h2>Part 3: How I used AI</h2>
-<blockquote>
-<p><strong>[EDIT BEFORE SUBMITTING]</strong> Cheerio asks for honesty here. Keep what is true, delete what isn't, and add your own chat links.</p>
-</blockquote>
 <p><strong>1. Tools and what for</strong></p>
 <table>
 <thead>
 <tr>
 <th>Tool</th>
-<th>Used for</th>
+<th>What I used it for</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>[ChatGPT / Claude chat: confirm]</td>
-<td>Brainstorming solution options, stress-testing the unit economics, drafting the master build prompt</td>
+<td><strong>Gemini</strong></td>
+<td>Brainstorming the core thesis (why an inline diagnose-and-fix agent beats an Intercom-style FAQ bot for non-technical Meta BSP users) and structuring my first requirements prompt</td>
 </tr>
 <tr>
-<td>Claude Code (desktop)</td>
-<td>Building the React prototype, writing the Python script that generates the formula-based sheet, drafting this doc from my outline</td>
-</tr>
-<tr>
-<td>Anthropic / OpenAI pricing pages</td>
-<td>Model prices for token cost (checked Oct 2026)</td>
+<td><strong>Claude Code (Opus)</strong></td>
+<td>Building the React + Tailwind prototype, writing <code>generate_financial_model.py</code> (openpyxl, live formulas), and auditing my unit economics and Meta API error codes</td>
 </tr>
 </tbody>
 </table>
-<p><strong>2. Prompts that worked (3) and one that failed</strong></p>
+<p><strong>2. Three prompts that worked, one that failed</strong></p>
 <ul>
-<li>✅ <em>"Every derived number MUST use an Excel formula string so formulas are visible in Google Sheets. Color assumption cells blue."</em> It produced a sheet a reviewer can audit, not a table of pasted numbers.</li>
-<li>✅ <em>"Proactive trigger: instead of a generic Contact Support button, show 'Diagnose &amp; Auto-Fix' right next to the error badge."</em> This prompt moved the design from chatbot to inline fix.</li>
-<li>✅ <em>"Show explicitly what the AI will NOT do. User asks 'Just approve my number right now!'"</em> It produced the guardrail edge case (Scenario 3).</li>
-<li>❌ <em>[EDIT: your real failed prompt, e.g. "Build a customer support chatbot prototype for Cheerio AI"]</em> gave a generic bottom-right chat bubble where the user still had to type their error. <strong>Change:</strong> I constrained it to <em>inline error interception + 1-click fix tied to specific Meta errors</em>.</li>
+<li>✅ <strong>Formula-only sheet:</strong> <em>"Never hardcode calculated outputs. Every derived number MUST use an Excel formula string (e.g. =B6*B7) so formulas are 100% visible in Google Sheets. Colour assumption cells blue."</em> This gave me a sheet a reviewer can audit, not a table of pasted numbers.</li>
+<li>✅ <strong>Scenario state machine:</strong> <em>"Clicking opens the Co-Pilot drawer with an English / Hinglish toggle → 3-point root cause → before vs. AI-fixed preview → Apply &amp; resubmit → animated validation → Approved → 'Did this solve your issue? 👍 / 👎 Need human'."</em> Spelling out every state got me a real end-to-end flow on the first try, not a static mock.</li>
+<li>✅ <strong>Refusal + handoff:</strong> <em>"User asks 'Just approve my number right now!' Explicitly show what the AI will NOT do: refuse to fake Meta verification for #131031, then show an auto-compiled diagnostic packet and escalate."</em> This produced Scenario 3, the edge case I care most about.</li>
+<li>❌ <strong>Failed:</strong> my first master prompt gave the AI both the inputs (160 productive hours, 10-min handling time, token prices) <em>and</em> my back-of-the-envelope targets (800 tickets/agent, 4 agents, ₹0.65–1.10 per query). By over-constraining it, I made the narrative fight the actual maths. <strong>What I changed:</strong> I told Claude Code to treat the spreadsheet formulas as the single source of truth and to overwrite every number in the doc and prototype with the formula outputs.</li>
 </ul>
-<p><strong>3. Where AI was wrong or weak, and how it was caught</strong></p>
+<p><strong>3. Where AI gave a wrong or weak answer, and how I caught it</strong></p>
 <ul>
-<li><strong>Agent math:</strong> the AI-drafted plan said a 10-min handling time = 800 tickets/agent/month → 4 agents. Putting it in a live formula showed 160 h × 60 / 10 = <strong>960</strong>, so <strong>3 agents</strong> are needed. Lesson: never trust a number that isn't a formula.</li>
-<li><strong>Outdated models:</strong> the plan priced Claude 3.5 Sonnet/Haiku, which are retired by Oct 2026. Re-priced on current Claude Haiku 5.5 / Sonnet 5.5 and kept GPT-4o-mini as a sensitivity row.</li>
-<li><strong>Wrong Meta error code:</strong> the draft used <code>#131009</code> for a template rejection. That code is a <em>send-time</em> "parameter not valid" error. Template rejections come back as reasons like <code>INVALID_FORMAT</code>, so the prototype uses that.</li>
-<li><strong>Broken spreadsheet:</strong> the first sheet generator wrote explanation text starting with "=", which Excel reads as a formula, so the file failed to load in a formula checker. Caught by recalculating the whole workbook before sharing.</li>
-<li><em>[EDIT: add any you caught yourself, e.g. AI suggesting ₹5 per AI query, which I rejected because it charges users exactly when they're stuck]</em></li>
+<li><strong>Agent capacity (960 vs. 800):</strong> the first draft said a 10-min handling time over 160 hours meant 800 tickets/agent, so 4 agents. Auditing the formula (160 × 60 / 10 = <strong>960</strong>) showed <strong>3 agents</strong> cover the 2,730 escalated tickets, which lifts savings to <strong>₹5.07L/month (80.5%)</strong>.</li>
+<li><strong>Raw token cost vs. real unit cost:</strong> looking only at LLM spend (<strong>₹0.82/query</strong>) hid the $120/month infra and the tokens spent on the 30% of queries that escalate anyway. Dividing total AI spend by the 6,370 AI-resolved queries gives the honest number: <strong>₹2.75 per resolved query</strong>.</li>
+<li><strong>Meta error code:</strong> the draft used <code>#131009</code> for a rejected template. In Meta's API that is a send-time "parameter value not valid" error. Template rejections come back as a rejection reason such as <code>INVALID_FORMAT</code> or <code>INCORRECT_CATEGORY</code>, so I changed the prototype to show that.</li>
 </ul>
-<p><strong>4. What I did myself, without AI</strong> <em>[EDIT: make this accurate]</em>
-Picked Assignment A and the core thesis (<em>fix in context</em> beats <em>answer questions</em>); chose the hybrid free + Pro pricing so users are never charged for being stuck; defined what Co-Pilot must never do; set the assumptions in blue cells and sanity-checked every output; reviewed every screen of the prototype as Riya would.</p>
+<p><strong>4. What I did myself, without AI</strong></p>
+<ul>
+<li>Picked Assignment A, because for a Meta BSP serving non-technical Indian SMBs, setup friction (templates, WABA verification, flow rules) is the real scaling bottleneck.</li>
+<li>Decided core setup diagnostics + 15 auto-fixes/month must be <strong>free</strong>. Charging people while they're stuck onboarding drives churn and sends them back to tickets. Power users pay through the <strong>₹999/month Pro add-on (93.8% margin)</strong>.</li>
+<li>Drew the human-escalation boundaries (<code>#131031</code> account restrictions, billing disputes, 2 failed fixes in a row), and checked every spreadsheet formula and every prototype state myself.</li>
+</ul>
 <hr />
 <h2 class="pb">Part 4: Numbers (summary; every value is a live formula in the Google Sheet)</h2>
 <p><strong>1. Guesstimate</strong>: 5,000 businesses: 750 onboarding × 4.2 queries + 4,250 existing × 1.4 = <strong>9,100 queries/month</strong>. Co-Pilot resolves <strong>6,370 (70%)</strong>: 45% inline auto-fix + 25% guided. <strong>2,730</strong> still reach a human.</p>
