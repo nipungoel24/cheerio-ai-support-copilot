@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/drawer.tsx","./src/components/scenariobar.tsx","./src/components/shell.tsx","./src/data/numbers.ts","./src/scenarios/escalationscenario.tsx","./src/scenarios/finopsdashboard.tsx","./src/scenarios/flowscenario.tsx","./src/scenarios/templatescenario.tsx"],"version":"5.6.3"}

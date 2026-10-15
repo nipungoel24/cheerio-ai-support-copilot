@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cheerio Co-Pilot – Assignment A</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+@page { size: A4; margin: 12mm 13mm; }
+:root { --brand:#0b5d4b; --ink:#1e293b; --muted:#64748b; --line:#e2e8f0; --tint:#ecfdf6; }
+* { box-sizing: border-box; }
+body { font-family: Inter, system-ui, sans-serif; color: var(--ink); background:#fff; font-size: 9.1pt; line-height: 1.35; max-width: 190mm; margin: 0 auto; padding: 8mm 0; }
+h1 { font-size: 16pt; color: var(--brand); margin: 0 0 4px; }
+h2 { font-size: 12pt; color: #fff; background: var(--brand); padding: 3px 8px; border-radius: 4px; margin: 10px 0 6px; }
+h3 { font-size: 10.2pt; color: var(--brand); margin: 9px 0 3px; }
+p { margin: 3px 0 5px; }
+ul { margin: 3px 0 5px; padding-left: 16px; } li { margin: 1px 0; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0 6px; font-size: 8.2pt; page-break-inside: avoid; }
+th { background: var(--tint); color: var(--brand); text-align: left; font-weight: 600; }
+th, td { border: 1px solid var(--line); padding: 2.5px 5px; vertical-align: top; }
+code { background: #f1f5f9; padding: 0 3px; border-radius: 3px; font-size: 8.4pt; }
+blockquote { margin: 4px 0; padding: 4px 8px; background: #fff7ed; border-left: 3px solid #f59e0b; color: #9a3412; }
+blockquote p { margin: 0; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 8px 0; }
+a { color: var(--brand); }
+.shots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 6px; }
+.shots p { display: contents; }
+.shots img { width: 100%; border: 1px solid var(--line); border-radius: 4px; }
+@media print {
+  body { padding: 0; }
+  h2 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  th, blockquote { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pb { page-break-before: always; }
+}
+</style></head><body>
+<h1>Cheerio Co-Pilot: support that fixes the problem, not just explains it</h1>
+<p><strong>Assignment A · Make customer support scale for non-technical users</strong> · Nipun Goel · Oct 2026
+<strong>Prototype:</strong> [add link] · <strong>Google Sheet (formulas visible):</strong> [add link] · <strong>Prompt log:</strong> [add link] · <strong>Loom:</strong> [optional]</p>
+<hr />
+<h2>Part 1: Solution</h2>
+<h3>1. Who is the user, and which 5 queries come first?</h3>
+<p><strong>User: "Riya", a D2C founder or marketing manager at a 2–20 person business</strong> (skincare brand, hotel, coaching institute). She runs WhatsApp campaigns herself, has no developer, and knows her business well but not Meta's rules. Her goal is to get today's campaign out. She gets stuck because Meta's rules stay invisible until something is rejected, and the error she sees (<code>INVALID_FORMAT</code>, <code>#131031</code>) means nothing to her.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Query (share of tickets*)</th>
+<th>Why she gets stuck</th>
+<th>Why solve it first</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Template rejected by Meta</strong> (28%)</td>
+<td>Category rules, variable placement and 25-char button limits aren't shown up front</td>
+<td>Highest volume; rejection reasons come back from Meta in a format we can read and fix in code</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Chatbot flow node not working</strong> (22%)</td>
+<td>List limits (10 rows), missing fallbacks, dead ends are silent</td>
+<td>Our own canvas, so we can lint and auto-repair nodes</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>WABA onboarding / number verification stuck</strong> (18%)</td>
+<td>Meta Business Manager steps are confusing; status is unclear</td>
+<td>Most onboarding steps can be checked automatically. A human is needed only when Meta itself is blocking</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Campaign delivery drops</strong> (17%)</td>
+<td>24-hour window, tier limits, quality rating are invisible</td>
+<td>Delivery logs plus the tier and window rules are enough to explain most drops</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Shopify / Zoho / webhook sync</strong> (10%)</td>
+<td>Auth expiry, field mapping</td>
+<td>Native integrations can be test-pinged and re-authed in one click</td>
+</tr>
+</tbody>
+</table>
+<p>*Assumed mix. Validate against helpdesk tags in week 1. Together these are <strong>95% of volume</strong>. Billing disputes and bans (5%) stay human. Ranked by <strong>volume × how fixable in-product</strong>: each one has an error signal we can read in code, so it can be fixed where the user already is.</p>
+<h3>2. Possible solutions and why I picked one</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it is</th>
+<th>Impact</th>
+<th>Effort</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A. Help centre + video academy</td>
+<td>Static docs, walkthroughs</td>
+<td>Low</td>
+<td>Low</td>
+<td>Users read it, still can't fix <code>{{2}}</code> syntax</td>
+</tr>
+<tr>
+<td>B. FAQ chatbot (Intercom-style RAG)</td>
+<td>Q&amp;A over docs, bottom-right bubble</td>
+<td>Medium</td>
+<td>Low</td>
+<td>User must describe a technical error they don't understand</td>
+</tr>
+<tr>
+<td>C. Pre-flight validators (no AI)</td>
+<td>Rule checks before submit</td>
+<td>Medium</td>
+<td>Low</td>
+<td>Great base layer, but can't explain or rewrite</td>
+</tr>
+<tr>
+<td>D. Human concierge onboarding</td>
+<td>CSM sets up every new account</td>
+<td>High</td>
+<td>High</td>
+<td>Grows linearly with users: the exact problem we're solving</td>
+</tr>
+<tr>
+<td>E. Community / WhatsApp support group</td>
+<td>Peer help</td>
+<td>Low</td>
+<td>Low</td>
+<td>Slow, inconsistent, not for urgent blockers</td>
+</tr>
+<tr>
+<td>F. Autonomous agent in Meta Business Suite</td>
+<td>AI clicks around Meta on user's behalf</td>
+<td>High</td>
+<td>Very high</td>
+<td>Brittle, risky with account permissions, Meta ToS concerns</td>
+</tr>
+<tr>
+<td><strong>G. Cheerio Co-Pilot (chosen)</strong></td>
+<td><strong>In-context diagnosis + 1-click fix + smart human handoff</strong></td>
+<td><strong>High</strong></td>
+<td><strong>Medium</strong></td>
+<td><strong>Closes the "execution gap"</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why G:</strong> Non-technical users don't lack <em>information</em>, they lack the ability to <em>apply</em> it. A chatbot (B) can tell Riya "variables can't end a template", but she still has to find and edit it herself. Co-Pilot already <strong>knows the screen, the error and the account</strong>, so it can show the fix and apply it with one click. It also includes C as its first layer: deterministic rules run first (cheap, never hallucinate), and the LLM is used only to explain and to rewrite.</p>
+<h3>3. The solution: what it will and won't do</h3>
+<p>Co-Pilot is a context-aware assistant built into the Cheerio dashboard. It works in 3 tiers:</p>
+<ul>
+<li><strong>Tier 0: inline auto-fix (target 45% of queries).</strong> When an error appears (template rejected, flow node broken), a "Diagnose &amp; auto-fix" button shows up right next to it, <em>before</em> the user thinks of raising a ticket.</li>
+<li><strong>Tier 1: guided Co-Pilot drawer (25%).</strong> For multi-step problems (WABA setup, delivery drops), it walks the user through the steps, runs checks itself and explains in English or Hinglish.</li>
+<li><strong>Tier 2: human with a diagnostic packet (30%).</strong> When AI shouldn't or can't fix it, it creates the ticket with IDs, logs and steps already tried. The user types nothing.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>It WILL</th>
+<th>It will NOT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Read the page state + Meta/API error payload</td>
+<td>Send or schedule a campaign without the user's click</td>
+</tr>
+<tr>
+<td>Explain the cause in plain English / Hinglish</td>
+<td>Change plan, billing or credits</td>
+</tr>
+<tr>
+<td>Propose a before/after fix and apply it on confirm</td>
+<td>Claim Meta approved / unbanned something it can't verify</td>
+</tr>
+<tr>
+<td>Pre-check against Meta rules before resubmitting</td>
+<td>Guess when confidence &lt; 0.78. It escalates instead</td>
+</tr>
+<tr>
+<td>Package logs + context when escalating</td>
+<td>Touch the user's Meta Business Manager directly</td>
+</tr>
+</tbody>
+</table>
+<h3>4. When does a human still step in?</h3>
+<ol>
+<li><strong>Meta-side blocks:</strong> account restrictions (<code>#131031</code>), green-tick appeals, stuck number migrations. Only Meta can fix these, through Cheerio's BSP partner channel.</li>
+<li><strong>Money:</strong> billing disputes, refunds, credit adjustments, enterprise contract changes.</li>
+<li><strong>Custom tech:</strong> custom ERP or webhook payloads outside our native integrations.</li>
+<li><strong>Loop or frustration:</strong> 2 failed AI fixes in a row, the user asks for a human, or negative sentiment is detected. The user can always reach a human with one click.</li>
+</ol>
+<h3>5. How I'll measure success (3 metrics)</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Definition</th>
+<th>Target (month 3)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>True self-serve resolution rate</strong></td>
+<td>% of Co-Pilot sessions where the blocked action completes in 15 min <strong>and</strong> no human ticket in next 48 h</td>
+<td>≥ 65%</td>
+</tr>
+<tr>
+<td><strong>Escalated-ticket handling time</strong></td>
+<td>Avg. agent minutes per escalated ticket (packet removes back-and-forth)</td>
+<td>18 → 10 min</td>
+</tr>
+<tr>
+<td><strong>24-hour activation</strong></td>
+<td>% of new workspaces that send their first approved WhatsApp campaign within 24 h of signup</td>
+<td>+15 pts vs. baseline</td>
+</tr>
+</tbody>
+</table>
+<p><em>Guardrail:</em> "ghost re-open" rate (AI said solved, but a ticket was raised within 24 h) must stay <strong>&lt; 12%</strong>, so we never hit a target by hiding tickets.</p>
+<h3>6. North Star metric</h3>
+<p><strong>Self-Serve Setup Resolution Rate (SSSRR):</strong> % of users who hit a setup error or support intent and <strong>finish the blocked task</strong> (template approved, flow published, integration live) <strong>within 30 minutes, with no human</strong>.</p>
+<p>It captures the real value: Riya's campaign goes out <em>and</em> Cheerio needs no extra hire. Deflection alone can be gamed by hiding the support button. SSSRR only counts a query when the user's blocked task actually got done.</p>
+<p><strong>Target: from ~18% today (est., passive docs; measure in week 1) to 65% in 12 weeks.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Ship</th>
+<th>SSSRR target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Template auto-fixer + Meta pre-flight checker (the 28% bucket)</td>
+<td>38%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Flow-canvas linter + auto-repair, WABA onboarding diagnostic wizard</td>
+<td>52%</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Hinglish, Shopify/Zoho test-ping + re-auth, weekly fixes from re-open audit</td>
+<td>65%</td>
+</tr>
+</tbody>
+</table>
+<p>How I'll get there: ship by volume bucket, instrument every session (diagnosis shown → fix applied → task completed → ticket in 48 h?), and every week turn the top 3 escalation reasons into new deterministic fixes.</p>
+<hr />
+<h2>Part 2: Prototype</h2>
+<p><strong>Link:</strong> [add deployed link] · Built with React + Tailwind. A <strong>Reviewer mode</strong> bar at the top switches between scenarios.</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Template rejected (main journey, end to end)</strong></td>
+<td>Riya's Diwali template is rejected → "Diagnose &amp; auto-fix" → 3 root causes (category, trailing variable, 34-char button) → before/after preview → apply → live pre-check → Approved → 👍/👎 feedback. 👎 opens a ticket with full context. English/Hinglish toggle.</td>
+</tr>
+<tr>
+<td><strong>2. Broken chatbot flow</strong></td>
+<td>Co-Pilot highlights the broken node (14-row list, no fallback) on the canvas → one click splits the list and adds a fallback → user publishes (Co-Pilot doesn't).</td>
+</tr>
+<tr>
+<td><strong>3. Edge case: number restricted by Meta</strong></td>
+<td>User demands "Just approve my number!" → Co-Pilot refuses to fake it, explains why → shows auto-filled diagnostic packet → escalates as ticket #CH-8842 with zero typing.</td>
+</tr>
+<tr>
+<td><strong>4. Internal cost &amp; audit view</strong></td>
+<td>Deflection funnel, cost per query, savings, alert status, per-tenant circuit breaker.</td>
+</tr>
+</tbody>
+</table>
+<div class="shots">
+<p><img alt="Scenario 1: diagnosis" src="screenshots/1a_template_diagnosis.jpg" />
+<img alt="Scenario 2: flow fixed" src="screenshots/2_flow_fixed.jpg" />
+<img alt="Scenario 3: escalation" src="screenshots/3_escalation.jpg" />
+<img alt="Scenario 4: cost &amp; audit" src="screenshots/4_cost_audit.jpg" /></p>
+</div>
+<hr />
+<h2>Part 3: How I used AI</h2>
+<blockquote>
+<p><strong>[EDIT BEFORE SUBMITTING]</strong> Cheerio asks for honesty here. Keep what is true, delete what isn't, and add your own chat links.</p>
+</blockquote>
+<p><strong>1. Tools and what for</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[ChatGPT / Claude chat: confirm]</td>
+<td>Brainstorming solution options, stress-testing the unit economics, drafting the master build prompt</td>
+</tr>
+<tr>
+<td>Claude Code (desktop)</td>
+<td>Building the React prototype, writing the Python script that generates the formula-based sheet, drafting this doc from my outline</td>
+</tr>
+<tr>
+<td>Anthropic / OpenAI pricing pages</td>
+<td>Model prices for token cost (checked Oct 2026)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>2. Prompts that worked (3) and one that failed</strong></p>
+<ul>
+<li>✅ <em>"Every derived number MUST use an Excel formula string so formulas are visible in Google Sheets. Color assumption cells blue."</em> It produced a sheet a reviewer can audit, not a table of pasted numbers.</li>
+<li>✅ <em>"Proactive trigger: instead of a generic Contact Support button, show 'Diagnose &amp; Auto-Fix' right next to the error badge."</em> This prompt moved the design from chatbot to inline fix.</li>
+<li>✅ <em>"Show explicitly what the AI will NOT do. User asks 'Just approve my number right now!'"</em> It produced the guardrail edge case (Scenario 3).</li>
+<li>❌ <em>[EDIT: your real failed prompt, e.g. "Build a customer support chatbot prototype for Cheerio AI"]</em> gave a generic bottom-right chat bubble where the user still had to type their error. <strong>Change:</strong> I constrained it to <em>inline error interception + 1-click fix tied to specific Meta errors</em>.</li>
+</ul>
+<p><strong>3. Where AI was wrong or weak, and how it was caught</strong></p>
+<ul>
+<li><strong>Agent math:</strong> the AI-drafted plan said a 10-min handling time = 800 tickets/agent/month → 4 agents. Putting it in a live formula showed 160 h × 60 / 10 = <strong>960</strong>, so <strong>3 agents</strong> are needed. Lesson: never trust a number that isn't a formula.</li>
+<li><strong>Outdated models:</strong> the plan priced Claude 3.5 Sonnet/Haiku, which are retired by Oct 2026. Re-priced on current Claude Haiku 5.5 / Sonnet 5.5 and kept GPT-4o-mini as a sensitivity row.</li>
+<li><strong>Wrong Meta error code:</strong> the draft used <code>#131009</code> for a template rejection. That code is a <em>send-time</em> "parameter not valid" error. Template rejections come back as reasons like <code>INVALID_FORMAT</code>, so the prototype uses that.</li>
+<li><strong>Broken spreadsheet:</strong> the first sheet generator wrote explanation text starting with "=", which Excel reads as a formula, so the file failed to load in a formula checker. Caught by recalculating the whole workbook before sharing.</li>
+<li><em>[EDIT: add any you caught yourself, e.g. AI suggesting ₹5 per AI query, which I rejected because it charges users exactly when they're stuck]</em></li>
+</ul>
+<p><strong>4. What I did myself, without AI</strong> <em>[EDIT: make this accurate]</em>
+Picked Assignment A and the core thesis (<em>fix in context</em> beats <em>answer questions</em>); chose the hybrid free + Pro pricing so users are never charged for being stuck; defined what Co-Pilot must never do; set the assumptions in blue cells and sanity-checked every output; reviewed every screen of the prototype as Riya would.</p>
+<hr />
+<h2 class="pb">Part 4: Numbers (summary; every value is a live formula in the Google Sheet)</h2>
+<p><strong>1. Guesstimate</strong>: 5,000 businesses: 750 onboarding × 4.2 queries + 4,250 existing × 1.4 = <strong>9,100 queries/month</strong>. Co-Pilot resolves <strong>6,370 (70%)</strong>: 45% inline auto-fix + 25% guided. <strong>2,730</strong> still reach a human.</p>
+<p><strong>2. Running cost (per query, multi-turn)</strong></p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tokens per query</td>
+<td>3.5 turns × 2,800 in = 9,800 input · 3.5 × 450 = 1,575 output</td>
+</tr>
+<tr>
+<td>Models (Anthropic pricing, Oct 2026)</td>
+<td>80% Claude Haiku 5.5 ($0.10 / $0.50 per 1M) · 20% Claude Sonnet 5.5 ($2 / $10 per 1M)</td>
+</tr>
+<tr>
+<td>LLM cost per query (+15% retry buffer, ₹84/$)</td>
+<td><strong>₹0.82</strong> (100% Sonnet worst case: ₹3.41)</td>
+</tr>
+<tr>
+<td>Fixed infra (vector DB, Langfuse, hosting)</td>
+<td>$120/month</td>
+</tr>
+<tr>
+<td><strong>Monthly AI cost</strong></td>
+<td><strong>₹17,538</strong> · ₹1.93 per query · <strong>₹2.75 per AI-resolved query</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>3. Billing: free core + paid Pro add-on</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Per-conversation (₹5/query)</td>
+<td>❌ Charges users exactly when they're stuck → they go back to tickets</td>
+</tr>
+<tr>
+<td>Credits pool</td>
+<td>❌ Non-technical owners shouldn't budget for "help"</td>
+</tr>
+<tr>
+<td>Free for all</td>
+<td>✅ for setup fixes (15 free auto-fixes/month, covers ~3× typical need)</td>
+</tr>
+<tr>
+<td><strong>Plan add-on: Co-Pilot Pro ₹999/month</strong></td>
+<td>✅ Unlimited template rewriter, auto-flow builder, priority audit. Free in Growth/Enterprise</td>
+</tr>
+</tbody>
+</table>
+<p>At 12% attach (600 businesses): <strong>₹5,99,400/month revenue</strong> vs. ₹17,538 AI cost + ₹19,670 extra Pro usage → <strong>93.8% gross margin</strong>. Break-even is <strong>38 buyers</strong>. Even at 0 buyers, AI costs <strong>₹3.51 per business per month</strong>, which the support savings below pay for many times over.</p>
+<p><strong>4. Monthly audit and alerts</strong></p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Alert when</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM cost per query</td>
+<td>&gt; ₹2.00 (≈2.4× plan)</td>
+<td>Check router share and prompt size; roll back last prompt change</td>
+</tr>
+<tr>
+<td>All-in cost per AI-resolved query</td>
+<td>&gt; ₹4.00</td>
+<td>Cut turns or add deterministic fixes for low-resolution intents</td>
+</tr>
+<tr>
+<td>Per-tenant cap</td>
+<td>&gt; 50 sessions/day or ₹150/month</td>
+<td>Auto-throttle to free rule-based checks; notify CSM</td>
+</tr>
+<tr>
+<td>Ghost re-open rate</td>
+<td>&gt; 12%</td>
+<td>Fix prompts/playbooks for top re-opened intents</td>
+</tr>
+<tr>
+<td>Hallucination (50 chats/week, LLM judge + PM spot-check)</td>
+<td>&gt; 1%</td>
+<td>Pull intent from auto-fix; add doc to RAG; re-test</td>
+</tr>
+<tr>
+<td>Pro margin / billing reconciliation</td>
+<td>&lt; 80% / gap &gt; 0.5%</td>
+<td>Revisit free cap or price; fix entitlement sync</td>
+</tr>
+</tbody>
+</table>
+<p>Monthly ritual: reconcile the Anthropic invoice against our token logs (gap &gt; 2% → investigate), review every ALERT with an owner, and check the top 10 tenants by spend (a free tenant in the top 10 → review the fair-use cap).</p>
+<p><strong>5. Savings vs. all-human support (same 9,100 queries)</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>All human</th>
+<th>With Co-Pilot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tickets to humans</td>
+<td>9,100</td>
+<td>2,730</td>
+</tr>
+<tr>
+<td>Handling time</td>
+<td>18 min (533/agent/mo)</td>
+<td>10 min with packet (960/agent/mo)</td>
+</tr>
+<tr>
+<td>Agents (₹35,000 loaded)</td>
+<td>18 → ₹6,30,000</td>
+<td>3 → ₹1,05,000</td>
+</tr>
+<tr>
+<td>AI cost</td>
+<td>–</td>
+<td>₹17,538</td>
+</tr>
+<tr>
+<td><strong>Total / month</strong></td>
+<td><strong>₹6,30,000</strong></td>
+<td><strong>₹1,22,538</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Savings: ₹5,07,462/month (₹60.9 L/year, −80.5%).</strong> The bigger point is scaling: if customers double, all-human needs <strong>35 agents</strong>; with Co-Pilot it needs <strong>6</strong>.</p>
+</body></html>
